@@ -310,36 +310,18 @@ def find_words_for_presentation(non_pivots_res, tfidfs, file_name, num_words = 5
     f.write("Domain, word, score")
     f.write("\n")
     for domain in domains:
-        # other_domains = [d for d in domains if d != domain]
         temp_res = []
         idx = 0
-        # temp_dict = {}
         while len(temp_res) < num_words:
-        # for word, score in non_pivots_res[domain]:
-            #other_domain_scores = [tfidfs[d][word] for d in other_domains]
             word, score = non_pivots_res[domain][idx]
             word_dict = {d: tfidfs[d][word] for d in domains}
             idx += 1
-            #word_dict[domain] = score
-            #temp_dict[word] = word_dict
-
             if list(word_dict.values()).count(0) < 4: # adjusts the number of allowed 0's in other domains
                 temp_res.append(word)
                 for temp_domain, temp_score in word_dict.items():
                     f.write("{}, {}, {}".format(temp_domain,word,temp_score))
                     f.write("\n")
         domain_words[domain] = temp_res
-
-        # temp_res.sort(key=lambda row: row[2])
-        # temp_res.sort(key=lambda row: row[1], reverse = True)
-        # temp_res = temp_res[:num_words]
-        # final_words = []
-        # for temp_word, _, _ in temp_res:
-        #     final_words.append(temp_word)
-        #     for temp_domain, temp_score in temp_dict[temp_word].items():
-        #         f.write("{}, {}, {}".format(temp_domain,temp_word,temp_score))
-        #         f.write("\n")
-        # domain_words[domain] = final_words
     f.close() 
     return domain_words
 
@@ -382,7 +364,7 @@ if __name__ == '__main__':
     # for domain in names:
     #     top_non_pivit[domain] = [word for word,_ in non_pivot[domain][:5]]
     all_target_domains_vocab = [bow.keys() for bow in bows]
-    with open("word_maps.txt","w") as f:
+    with open("results/lexicons.txt","w") as f:
         f.write("source_domain")
         f.write(" ,")
         f.write("source_word")
