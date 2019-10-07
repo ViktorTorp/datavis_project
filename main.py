@@ -117,56 +117,91 @@ def find_distances(source_vector, word_embedding):
     return sorted(distances, key=lambda t: t[0], reverse=True)
 
 
-def find_closet(source_vector, word_embedding, target_vocab = None, number_closet = 1):
-    """ Calculates tf
+def find_closet(source_vector, word_embedding, target_vocab=None, number_closet=1):
+    """ Find number of closet words
+
+    Uses find_distances to find the closest word vectors
 
     Parameters
     ----------
-    bow : dict
-        dict with bag of word representationf
+    source_vector : list
+        The embdedding vector for the source word
+    word_embedding : dict
+        Dict with all words as keys and their vector as value
+    target_vocab : list (optional)
+        list of strings, with a targets vocabulary
+        (default is None)
+    number_closet : int (optional)
+        number of closest words
+        (default is 1)
 
     Returnes
     --------
-    tf : dict
-        Tf dict
+    closest : list
+        returens a list with number_closest tuples (distance,word) ordered
+        descendingly with respect to distance
     """
-    distances = [(cosine_similarity(source_vector, vector),word) for word, vector in word_embedding.items()]
-    result = sorted(distances, key=lambda t: t[0], reverse=True)
+    result = find_distances(source_vector, word_embedding)
+    closest = list()
+    idx = 0
+    while len(closest) < number_closet:
+        if result[idx][1] in target_vocab:
+            closest.append(result[idx])
+        idx += 1
+    return closest
 
-    if target_vocab:
-        result = [x for x in result if x[1] in target_vocab]
-    return result[:number_closet]
 
 
-def create_word_pair(source_word, word_embedding):
-    """ Calculates tf
+def create_word_pair(source_word, word_embedding, target_vocab=None):
+    """ Creates a word pair, with source_word and the closest word
+
+    Uses find_closet to find the single closest words vector
 
     Parameters
     ----------
-    bow : dict
-        dict with bag of word representationf
+    source_vector : list
+        The embdedding vector for the source word
+    word_embedding : dict
+        Dict with all words as keys and their vector as value
+    target_vocab : list (optional)
+        list of strings, with a targets vocabulary
+        (default is None)
 
     Returnes
     --------
-    tf : dict
-        Tf dict
+    closest : tuple
+        A tuple containing the source_word and the word which is closest
+        (source_word, closest_word)
     """
-    return (source_word, find_closet(word_embedding[source_word],word_embedding)[1])
+    return (source_word, find_closet(word_embedding[source_word],word_embedding, target_vocab)[1])
 
 
 def create_non_pivot_pair(source_domain, word, target_domain, target_vocab, word_embedding):
-    """ Calculates tf
+    """ Creates a non pivot word pair between two domains. 
+
+    Uses the find_closest to find the closest words, and then removes words
+    which are either related to the source_domain, word or the target_domain
 
     Parameters
     ----------
-    bow : dict
-        dict with bag of word representationf
+    source_domain : string
+        The name of the source domain
+    word : string
+        the word from the source domain, one want to find a
+        non pivot pair to
+    target_domain : string
+        The name of the target domain
+    target_vocab : list
+        list of strings, with a targets vocabulary
+    word_embedding : dict
+        Dict with all words as keys and their vector as value
 
     Returnes
     --------
-    tf : dict
-        Tf dict
+     : tuple
+        a tuple containing the (word, closest_word, cosine_similarity)
     """
+
     try:
         source_vector = np.array(word_embedding[source_domain])
         word_vector = np.array(word_embedding[word])
@@ -188,18 +223,32 @@ def create_non_pivot_pair(source_domain, word, target_domain, target_vocab, word
         return ("##NAN##", "##NAN##", 0)
 
 def create_lexicon(source_domain, source_words, target_domains, target_domains_vocab, word_embedding):
-    """ Calculates tf
+    """ Create a lexicon between source words and to several target_vocabs
+
+    Create a lexicon between a source domain and one or several
+    target domains. 
 
     Parameters
     ----------
-    bow : dict
-        dict with bag of word representationf
+    source_domain : string
+        The name of the source domain
+    source_words : list
+        list of words from the source domain, one want to find a
+        non pivot pair to
+    target_domains : list
+        List of the name of the target domains
+    target_domains_vocab : list
+        List of lists with strings, i.e. a list of target vocabularies
+    word_embedding : dict
+        Dict with all words as keys and their vector as value
 
     Returnes
     --------
-    tf : dict
-        Tf dict
+    result : list
+        A list containing the different lexicons,
+        i.e. a list of create_non_pivot_pair outputs
     """
+
     result = []
     for word in source_words:
         for idx, target_domain in enumerate(target_domains):
@@ -208,24 +257,23 @@ def create_lexicon(source_domain, source_words, target_domains, target_domains_v
     return result
 
 
-
-
-
-
-# Find Non-pivot words for each domain
 def non_pivot_words(tfidfs):
-    """ Calculates tf
+    """ Find Non-pivot words for each domain
+    
+    Finds non-pivot words based on tf-idf scores
 
     Parameters
     ----------
-    bow : dict
-        dict with bag of word representationf
+    tfidfs : dict
+        dict with domains as keys and they tf-idf dicts as value
 
     Returnes
     --------
-    tf : dict
-        Tf dict
+    result: dict
+        A dict with domains as keys and a list tuples(word, tf-idf scores)
+        sorted descendingly with respect to tf-idf scores
     """
+
     result = {}
     for domain, scores in tfidfs.items():
         result[domain] =  list(sorted(scores.items(), key=operator.itemgetter(1), reverse=True))
@@ -234,18 +282,28 @@ def non_pivot_words(tfidfs):
 
 
 def find_words_for_presentation(non_pivots_res, tfidfs, file_name, num_words = 5):
-    """ Calculates tf
+    """ Find words for datavis presentation
 
     Parameters
     ----------
-    bow : dict
-        dict with bag of word representationf
+    non_pivots_res : dict
+        A dict with domains as keys and a list tuples(word, tf-idf scores)
+        sorted descendingly with respect to tf-idf scores
+        i.e. result from non_pivot_words
+    tfidfs : dict
+        dict with domains as keys and they tf-idf dicts as value
+    file_name : string
+        path to file the new file with the results
+    num_words : int (optional)
+        number of words form each lexicon
+        (default is 5)
 
     Returnes
     --------
-    tf : dict
-        Tf dict
+    domain_words : dict
+        A dict with domains as keys and a list of domain words.
     """
+
     domains = non_pivots_res.keys()
     domain_words = {}
     f = open(file_name, "w")
@@ -286,9 +344,6 @@ def find_words_for_presentation(non_pivots_res, tfidfs, file_name, num_words = 5
     return domain_words
 
 
-
-
-
 if __name__ == '__main__':
     from TF_idf import TFIDF as tf_idf
     from time import time as time
@@ -320,7 +375,7 @@ if __name__ == '__main__':
 
     # create file for datavis illustration about non-pivot words
     top_non_pivit = find_words_for_presentation(non_pivot,tfidf_scores, "results/Data_vis_tfidf.txt")
-    print(" - done loading")
+    print(" - done transforming")
     print("")
 
     # top_non_pivit = {}
@@ -328,36 +383,38 @@ if __name__ == '__main__':
     #     top_non_pivit[domain] = [word for word,_ in non_pivot[domain][:5]]
     all_target_domains_vocab = [bow.keys() for bow in bows]
     with open("word_maps.txt","w") as f:
-        f.write("s")
+        f.write("source_domain")
         f.write(" ,")
-        f.write("w")
+        f.write("source_word")
         f.write(" ,")
-        f.write("td")
+        f.write("target_domain")
         f.write(" ,")
-        f.write("tw")
+        f.write("target_word")
         f.write(" ,")
-        f.write("co")
+        f.write("cosine_similarity")
         f.write("\n")
 
         for idx, domain in enumerate(names):
+            print("Creating lexicon with {} as domain".format(domain))
             other_domains = [dom for dom in names if dom != domain]
             source_words = top_non_pivit[domain]
             target_domains_vocab = [all_target_domains_vocab[i] for i in range(len(all_target_domains_vocab)) if i != idx]
             start = time()
             word_pair = create_lexicon(domain, source_words , other_domains, target_domains_vocab, word_embedding)
             stop = time()
-            for do, wo, ta, pw, co in word_pair:
-                if co > 1:
-                    co = 1.
-                f.write(str(do))
+            for sd, sw, td, tw, cs in word_pair:
+                if cs > 1:
+                    cs = 1.
+                f.write(str(sd))
                 f.write(" ,")
-                f.write(str(wo))
+                f.write(str(sw))
                 f.write(" ,")
-                f.write(str(ta))
+                f.write(str(td))
                 f.write(" ,")
-                f.write(str(pw))
+                f.write(str(tw))
                 f.write(" ,")
-                f.write("{}".format(co))
+                f.write("{}".format(cs))
                 f.write("\n")
-                print(do,",",wo,",",ta,",",pw,",", 179*co)
-
+                print(sd,",",sw,",",td,",",tw,",", cs)
+            print("- Done creating lexicon with {} as domain".format(domain))
+    print("Done writing results to {}".format("results/Data_vis_tfidf.txt"))
