@@ -252,30 +252,36 @@ def find_words_for_presentation(non_pivots_res, tfidfs, file_name, num_words = 5
     f.write("Domain, word, score")
     f.write("\n")
     for domain in domains:
-        other_domains = [d for d in domains if d != domain]
+        # other_domains = [d for d in domains if d != domain]
         temp_res = []
-        temp_dict = {}
-        for word, score in non_pivots_res[domain]:
-            other_domain_scores = [tfidfs[d][word] for d in other_domains]
+        idx = 0
+        # temp_dict = {}
+        while len(temp_res) < num_words:
+        # for word, score in non_pivots_res[domain]:
+            #other_domain_scores = [tfidfs[d][word] for d in other_domains]
+            word, score = non_pivots_res[domain][idx]
+            word_dict = {d: tfidfs[d][word] for d in domains}
+            idx += 1
+            #word_dict[domain] = score
+            #temp_dict[word] = word_dict
 
-            word_dict = {d: tfidfs[d][word] for d in other_domains}
-            word_dict[domain] = score
-            temp_dict[word] = word_dict
+            if list(word_dict.values()).count(0) < 4: # adjusts the number of allowed 0's in other domains
+                temp_res.append(word)
+                for temp_domain, temp_score in word_dict.items():
+                    f.write("{}, {}, {}".format(temp_domain,word,temp_score))
+                    f.write("\n")
+        domain_words[domain] = temp_res
 
-            if other_domain_scores.count(0) == 4: # adjusts the number of allowed 0's in other domains
-                continue
-            temp_res.append((word,score, np.mean(other_domain_scores)))
-
-        temp_res.sort(key=lambda row: row[2])
-        temp_res.sort(key=lambda row: row[1], reverse = True)
-        temp_res = temp_res[:num_words]
-        final_words = []
-        for temp_word, _, _ in temp_res:
-            final_words.append(temp_word)
-            for temp_domain, temp_score in temp_dict[temp_word].items():
-                f.write("{}, {}, {}".format(temp_domain,temp_word,temp_score))
-                f.write("\n")
-        domain_words[domain] = final_words
+        # temp_res.sort(key=lambda row: row[2])
+        # temp_res.sort(key=lambda row: row[1], reverse = True)
+        # temp_res = temp_res[:num_words]
+        # final_words = []
+        # for temp_word, _, _ in temp_res:
+        #     final_words.append(temp_word)
+        #     for temp_domain, temp_score in temp_dict[temp_word].items():
+        #         f.write("{}, {}, {}".format(temp_domain,temp_word,temp_score))
+        #         f.write("\n")
+        # domain_words[domain] = final_words
     f.close() 
     return domain_words
 
@@ -313,7 +319,7 @@ if __name__ == '__main__':
     non_pivot = non_pivot_words(tfidf_scores)
 
     # create file for datavis illustration about non-pivot words
-    top_non_pivit = find_words_for_presentation(non_pivot,tfidf_scores, "Data_vis_tfidf.txt")
+    top_non_pivit = find_words_for_presentation(non_pivot,tfidf_scores, "results/Data_vis_tfidf.txt")
     print(" - done loading")
     print("")
 
